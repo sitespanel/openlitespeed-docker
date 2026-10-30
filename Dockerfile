@@ -67,6 +67,9 @@ RUN set -eu; \
     rm -rf /var/lib/apt/lists/* /tmp/lst_repo.gpg /etc/apt/sources.list.d/litespeed.list /usr/share/keyrings/litespeed.gpg
 
 COPY --chown=lsadm:ols --chmod=0640 httpd_config.conf /usr/local/lsws/conf/httpd_config.conf
+COPY --chmod=0755 ols-run /usr/local/bin/ols-run
+COPY --chown=lsadm:ols --chmod=0640 idle-vhconf.conf /usr/local/lsws/conf/vhosts/idle/vhconf.conf
+RUN mkdir /usr/local/lsws/idle-html && chmod 0755 /usr/local/lsws/idle-html && chown -R lsadm:ols /usr/local/lsws/conf/vhosts && chmod 0750 /usr/local/lsws/conf/vhosts /usr/local/lsws/conf/vhosts/idle
 
 LABEL org.opencontainers.image.title="OpenLiteSpeed with LSPHP" \
       org.opencontainers.image.licenses="GPL-3.0-or-later AND PHP-3.01" \
@@ -74,4 +77,6 @@ LABEL org.opencontainers.image.title="OpenLiteSpeed with LSPHP" \
       org.opencontainers.image.description="Unmodified OpenLiteSpeed and LSPHP packages from LiteSpeed's apt repository. The corresponding source of OpenLiteSpeed is at the source URL at the tag of the installed version, and the Dockerfile that built this image is public; the corresponding source is also available on request from the image's publisher." \
       io.sitespanel.web-server="openlitespeed"
 
-# The container is started by the panel's agent with its own command and capabilities (TASK-0198, step 3); nothing starts by itself.
+# The panel's agent starts the container with a small init (for SIGUSR1/SIGTERM), a read-only root, only the capabilities in ADR-0044 and the folders the
+# server writes as volumes (TASK-0198, step 3). Until the agent writes its configuration (step 4) the server serves nothing.
+CMD ["/usr/local/bin/ols-run"]

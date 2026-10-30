@@ -1,0 +1,25 @@
+#!/bin/sh
+# The container's command (TASK-0198, step 3). OpenLiteSpeed has no foreground mode: `lswsctrl start` forks the server and returns. This runs under the
+# container's init, starts the server, and stays as long as it does. SIGUSR1 (graceful restart: the server re-reads its configuration and replaces its
+# workers without dropping connections) and SIGTERM (stop) reach it through the init and are passed on, the way lswsctrl does it.
+PIDFILE=/tmp/lshttpd/lshttpd.pid
+
+/usr/local/lsws/bin/lswsctrl start >/dev/null 2>&1
+pid=$(cat "$PIDFILE" 2>/dev/null)
+if [ -z "$pid" ] || ! kill -0 "$pid" 2>/dev/null; then
+    echo "ols-run: the server did not start" >&2
+    exit 1
+fi
+
+trap 'kill -USR1 "$pid" 2>/dev/null' USR1
+trap 'kill -USR2 "$pid" 2>/dev/null; kill -TERM "$pid" 2>/dev/null; i=0; while kill -0 "$pid" 2>/dev/null && [ $i -lt 15 ]; do sleep 1; i=$((i+1)); done; kill -KILL "$pid" 2>/dev/null; exit 0' TERM INT
+
+# A graceful restart replaces the main process's workers, not the main process; if the pid file changes, follow it.
+while kill -0 "$pid" 2>/dev/null; do
+    sleep 1 &
+    wait $!
+    new=$(cat "$PIDFILE" 2>/dev/null)
+    [ -n "$new" ] && pid="$new"
+done
+echo "ols-run: the server stopped" >&2
+exit 1
