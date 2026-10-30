@@ -1,8 +1,16 @@
 #!/bin/sh
-# The container's command (TASK-0198, step 3). OpenLiteSpeed has no foreground mode: `lswsctrl start` forks the server and returns. This runs under the
-# container's init, starts the server, and stays as long as it does. SIGUSR1 (graceful restart: the server re-reads its configuration and replaces its
-# workers without dropping connections) and SIGTERM (stop) reach it through the init and are passed on, the way lswsctrl does it.
+# The container's command (TASK-0198). OpenLiteSpeed has no foreground mode: `lswsctrl start` forks the server and returns. This runs under the
+# container's init, starts the server, and stays as long as it does.
+#
+# - SIGUSR1 (graceful restart: the server re-reads its configuration and replaces its workers without dropping connections) and SIGTERM (stop) reach
+#   it through the init and are passed on, the way lswsctrl does it.
+# - The server's error log is copied to the container's output, which is how the panel's agent sees what the server made of a new configuration (the
+#   server starts with whatever it could read, and says so only in this log).
+# - A change to a site's .htaccess is read only by a graceful restart, so one is made when a .htaccess under the web folder changes: looked for every
+#   ten seconds, at most one restart in thirty, so a site cannot keep the server restarting.
 PIDFILE=/tmp/lshttpd/lshttpd.pid
+LOG=/usr/local/lsws/logs/error.log
+WEB=/var/www/html
 
 /usr/local/lsws/bin/lswsctrl start >/dev/null 2>&1
 pid=$(cat "$PIDFILE" 2>/dev/null)
@@ -11,15 +19,36 @@ if [ -z "$pid" ] || ! kill -0 "$pid" 2>/dev/null; then
     exit 1
 fi
 
-trap 'kill -USR1 "$pid" 2>/dev/null' USR1
-trap 'kill -USR2 "$pid" 2>/dev/null; kill -TERM "$pid" 2>/dev/null; i=0; while kill -0 "$pid" 2>/dev/null && [ $i -lt 15 ]; do sleep 1; i=$((i+1)); done; kill -KILL "$pid" 2>/dev/null; exit 0' TERM INT
+tail -n 0 -F "$LOG" 2>/dev/null &
+tailpid=$!
 
-# A graceful restart replaces the main process's workers, not the main process; if the pid file changes, follow it.
+htaccess_sum() {
+    # Not following links, not going deep: WordPress and Laravel keep theirs at the top.
+    find -P "$WEB" -maxdepth 4 -name .htaccess -type f -printf '%p %T@ %s\n' 2>/dev/null | sort | md5sum
+}
+
+trap 'kill -USR1 "$pid" 2>/dev/null' USR1
+trap 'kill -USR2 "$pid" 2>/dev/null; kill -TERM "$pid" 2>/dev/null; i=0; while kill -0 "$pid" 2>/dev/null && [ $i -lt 15 ]; do sleep 1; i=$((i+1)); done; kill -KILL "$pid" 2>/dev/null; kill "$tailpid" 2>/dev/null; exit 0' TERM INT
+
+sum=$(htaccess_sum)
+last=0
+tick=0
+# A graceful restart replaces the main process, not the container; if the pid file changes, follow it.
 while kill -0 "$pid" 2>/dev/null; do
     sleep 1 &
     wait $!
     new=$(cat "$PIDFILE" 2>/dev/null)
     [ -n "$new" ] && pid="$new"
+    tick=$((tick+1))
+    if [ $((tick % 10)) -eq 0 ]; then
+        now=$(htaccess_sum)
+        if [ "$now" != "$sum" ] && [ $((tick - last)) -ge 30 -o $last -eq 0 ]; then
+            sum="$now"
+            last=$tick
+            kill -USR1 "$pid" 2>/dev/null
+        fi
+    fi
 done
+kill "$tailpid" 2>/dev/null
 echo "ols-run: the server stopped" >&2
 exit 1

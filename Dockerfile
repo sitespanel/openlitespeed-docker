@@ -66,10 +66,18 @@ RUN set -eu; \
     apt-get purge -y -qq curl gnupg >/dev/null; apt-get autoremove -y -qq >/dev/null; \
     rm -rf /var/lib/apt/lists/* /tmp/lst_repo.gpg /etc/apt/sources.list.d/litespeed.list /usr/share/keyrings/litespeed.gpg
 
-COPY --chown=lsadm:ols --chmod=0640 httpd_config.conf /usr/local/lsws/conf/httpd_config.conf
+# The idle configuration and account files: exactly what the panel's agent renders for a container with no site yet (internal/agent/ols, kept equal by
+# a test). The agent mounts the site's own versions of these two folders over them. The server's main configuration and the container's accounts are
+# links into them, because the root is read-only and a site's PHP user has no entry in the image: OpenLiteSpeed looks the user up by name and, when it
+# is not found, silently runs PHP as the server's own user.
+COPY --chown=root:ols --chmod=0640 site/ /usr/local/lsws/site/
+COPY --chmod=0644 nss/ /usr/local/lsws/nss/
 COPY --chmod=0755 ols-run /usr/local/bin/ols-run
-COPY --chown=lsadm:ols --chmod=0640 idle-vhconf.conf /usr/local/lsws/conf/vhosts/idle/vhconf.conf
-RUN mkdir /usr/local/lsws/idle-html && chmod 0755 /usr/local/lsws/idle-html && chown -R lsadm:ols /usr/local/lsws/conf/vhosts && chmod 0750 /usr/local/lsws/conf/vhosts /usr/local/lsws/conf/vhosts/idle
+RUN mkdir /usr/local/lsws/idle-html && chmod 0755 /usr/local/lsws/idle-html /usr/local/lsws/nss && chmod 0750 /usr/local/lsws/site; \
+    rm -rf /usr/local/lsws/conf/vhosts /usr/local/lsws/conf/httpd_config.conf; \
+    ln -s /usr/local/lsws/site/httpd_config.conf /usr/local/lsws/conf/httpd_config.conf; \
+    rm /etc/passwd /etc/group; \
+    ln -s /usr/local/lsws/nss/passwd /etc/passwd; ln -s /usr/local/lsws/nss/group /etc/group
 
 LABEL org.opencontainers.image.title="OpenLiteSpeed with LSPHP" \
       org.opencontainers.image.licenses="GPL-3.0-or-later AND PHP-3.01" \
