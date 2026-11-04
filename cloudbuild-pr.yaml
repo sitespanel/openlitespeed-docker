@@ -13,7 +13,7 @@ steps:
       - --label=org.opencontainers.image.source=https://github.com/sitespanel/openlitespeed-docker
       - --label=org.opencontainers.image.revision=$COMMIT_SHA
       - --label=dev.sitespanel.build.id=$BUILD_ID
-      - --label=org.opencontainers.image.description=SitesPanel OpenLiteSpeed with LSPHP 8.4 image
+      - --label=org.opencontainers.image.description=SitesPanel OpenLiteSpeed image with LSPHP 8.4, for sites that run on OpenLiteSpeed.
       - --tag=${_REGISTRY}/openlitespeed:8.4
       - --tag=${_REGISTRY}/openlitespeed:8.4-$SHORT_SHA
       - .
