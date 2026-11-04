@@ -1,10 +1,8 @@
 # Cloud Build: OpenLiteSpeed with LSPHP 8.4 image for SitesPanel.
-# Pull-request build: builds and scans only. Nothing is pushed and no secret is used, so it is
-# safe for pull requests; the trigger still requires a maintainer comment for outside contributors.
+# Pull-request build: builds and scans only. Nothing is pushed and no secret is read.
 
 substitutions:
-  _AR_HOST: europe-docker.pkg.dev
-  _AR_REPOSITORY: sitespanel-images
+  _REGISTRY: ghcr.io/sitespanel
 
 steps:
   - id: build-openlitespeed-8.4
@@ -14,25 +12,28 @@ steps:
       - build
       - --label=org.opencontainers.image.source=https://github.com/sitespanel/openlitespeed-docker
       - --label=org.opencontainers.image.revision=$COMMIT_SHA
-      - --tag=${_AR_HOST}/$PROJECT_ID/${_AR_REPOSITORY}/openlitespeed:8.4
-      - --tag=${_AR_HOST}/$PROJECT_ID/${_AR_REPOSITORY}/openlitespeed:8.4-$SHORT_SHA
+      - --label=dev.sitespanel.build.id=$BUILD_ID
+      - --label=org.opencontainers.image.description=SitesPanel OpenLiteSpeed with LSPHP 8.4 image
+      - --tag=${_REGISTRY}/openlitespeed:8.4
+      - --tag=${_REGISTRY}/openlitespeed:8.4-$SHORT_SHA
       - .
     waitFor: ['-']
-  - id: save-openlitespeed-8.4
-    name: gcr.io/cloud-builders/docker
-    args: ['save', '--output', '/workspace/openlitespeed-8.4.tar', '${_AR_HOST}/$PROJECT_ID/${_AR_REPOSITORY}/openlitespeed:8.4']
-    waitFor: ['build-openlitespeed-8.4']
   - id: scan-openlitespeed-8.4
+    name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    args: ['-ceu', 'docker save --output /workspace/openlitespeed-8.4.tar ${_REGISTRY}/openlitespeed:8.4']
+    waitFor: ['build-openlitespeed-8.4']
+  - id: trivy-openlitespeed-8.4
     name: aquasec/trivy:0.76.0@sha256:2416d1f74045b57274df1a340eee6b510cacd73c66a6ccb8da092b117eb7d222
     entrypoint: sh
     args:
       - -ceu
       - |
         trivy image --cache-dir /workspace/.trivy --input /workspace/openlitespeed-8.4.tar --severity CRITICAL --ignore-unfixed --exit-code 1 --format table
-    waitFor: ['save-openlitespeed-8.4']
+        rm -f /workspace/openlitespeed-8.4.tar
+    waitFor: ['scan-openlitespeed-8.4']
 
 options:
-  machineType: E2_HIGHCPU_8
   logging: CLOUD_LOGGING_ONLY
 
 timeout: 7200s
