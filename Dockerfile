@@ -12,7 +12,7 @@ FROM ubuntu:26.04@sha256:c098726dd9b9733f3e885f8de0ef375206a311b0a317eadc40d347b
 # The repository's signing key is checked against this fingerprint (RSA 4096, 2016). LiteSpeed's setup script downloads keys over plain HTTP
 # with no check; this does not. The older DSA 1024 key the repository also lists is not trusted.
 ARG LITESPEED_KEY_FPR=3E892522DB44E1B063D366C5011AA62DEDA1F085
-ARG OLS_VERSION=1.9.4-2+resolute
+ARG OLS_VERSION=1.9.4-3+resolute
 ARG PHP_MM=84
 ARG PHP_VERSION=8.4.27-1+resolute
 ARG APCU_VERSION=5.1.28-1+resolute
