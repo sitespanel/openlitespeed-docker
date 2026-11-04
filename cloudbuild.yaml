@@ -1,0 +1,53 @@
+# Cloud Build: OpenLiteSpeed with LSPHP 8.4 image for SitesPanel.
+# Publish build: runs on a push to main and on the weekly rebuild. Builds, scans, writes SBOMs,
+# then pushes to Artifact Registry with SLSA provenance (SitesPanel ADR-0065). Nothing is pushed
+# when a scan finds a fixable critical vulnerability.
+
+substitutions:
+  _AR_HOST: europe-docker.pkg.dev
+  _AR_REPOSITORY: sitespanel-images
+  _SBOM_BUCKET: sitespanel-image-sboms-europe  # set per trigger if the bucket has another name
+
+steps:
+  - id: build-openlitespeed-8.4
+    name: gcr.io/cloud-builders/docker
+    env: ['DOCKER_BUILDKIT=1']
+    args:
+      - build
+      - --label=org.opencontainers.image.source=https://github.com/sitespanel/openlitespeed-docker
+      - --label=org.opencontainers.image.revision=$COMMIT_SHA
+      - --tag=${_AR_HOST}/$PROJECT_ID/${_AR_REPOSITORY}/openlitespeed:8.4
+      - --tag=${_AR_HOST}/$PROJECT_ID/${_AR_REPOSITORY}/openlitespeed:8.4-$SHORT_SHA
+      - .
+    waitFor: ['-']
+  - id: save-openlitespeed-8.4
+    name: gcr.io/cloud-builders/docker
+    args: ['save', '--output', '/workspace/openlitespeed-8.4.tar', '${_AR_HOST}/$PROJECT_ID/${_AR_REPOSITORY}/openlitespeed:8.4']
+    waitFor: ['build-openlitespeed-8.4']
+  - id: scan-openlitespeed-8.4
+    name: aquasec/trivy:0.76.0@sha256:2416d1f74045b57274df1a340eee6b510cacd73c66a6ccb8da092b117eb7d222
+    entrypoint: sh
+    args:
+      - -ceu
+      - |
+        trivy image --cache-dir /workspace/.trivy --input /workspace/openlitespeed-8.4.tar --severity CRITICAL --ignore-unfixed --exit-code 1 --format table
+        mkdir -p /workspace/sbom
+        trivy image --cache-dir /workspace/.trivy --input /workspace/openlitespeed-8.4.tar --format spdx-json --output /workspace/sbom/openlitespeed-8.4.spdx.json
+    waitFor: ['save-openlitespeed-8.4']
+
+# Pushed only when every step succeeded; Cloud Build attaches SLSA provenance to these digests.
+images:
+  - ${_AR_HOST}/$PROJECT_ID/${_AR_REPOSITORY}/openlitespeed:8.4
+  - ${_AR_HOST}/$PROJECT_ID/${_AR_REPOSITORY}/openlitespeed:8.4-$SHORT_SHA
+
+artifacts:
+  objects:
+    location: gs://${_SBOM_BUCKET}/openlitespeed/$COMMIT_SHA/
+    paths: ['/workspace/sbom/*.spdx.json']
+
+options:
+  machineType: E2_HIGHCPU_8
+  logging: CLOUD_LOGGING_ONLY
+  requestedVerifyOption: VERIFIED
+
+timeout: 7200s

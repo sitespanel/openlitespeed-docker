@@ -1,8 +1,8 @@
 # OpenLiteSpeed with LSPHP for one PHP version (TASK-0198, step 2; ADR-0044). This is the Dockerfile for the founder's image repository
-# (openlitespeed-docker, published to easydigital/openlitespeed); it is kept here so the contract in image-manifest/images.yaml and the
+# (openlitespeed-docker, published to europe-docker.pkg.dev/PROJECT/sitespanel-images/openlitespeed); it is kept here so the contract in image-manifest/images.yaml and the
 # conditions of the security test (planning/reports/2026-10-31T0200-openlitespeed-lscgid-security-test.md) are checked against the same text.
 #
-#   docker build --build-arg PHP_MM=84 --build-arg PHP_VERSION=8.4.27-1+resolute -t easydigital/openlitespeed:8.4 images/openlitespeed
+#   docker build --build-arg PHP_MM=84 --build-arg PHP_VERSION=8.4.27-1+resolute -t europe-docker.pkg.dev/PROJECT/sitespanel-images/openlitespeed:8.4 images/openlitespeed
 #
 # Licences: OpenLiteSpeed is GPL-3.0+ (its package says so), LSPHP is the PHP License, the extensions have their own (see /usr/share/licenses/openlitespeed-image).
 # The packages come from LiteSpeed's apt repository, unmodified; the corresponding source of OpenLiteSpeed is
