@@ -7,7 +7,7 @@
 # Licences: OpenLiteSpeed is GPL-3.0+ (its package says so), LSPHP is the PHP License, the extensions have their own (see /usr/share/licenses/openlitespeed-image).
 # The packages come from LiteSpeed's apt repository, unmodified; the corresponding source of OpenLiteSpeed is
 # https://github.com/litespeedtech/openlitespeed at the tag of the version below, and is available on request (see the image labels).
-FROM ubuntu:26.04@sha256:c098726dd9b9733f3e885f8de0ef375206a311b0a317eadc40d347b1115fb944
+FROM ubuntu:26.04@sha256:6a06111c3b0a8600feadb270aec771dc239bf407b25625f93f44ab00e11f4d3c
 
 # The repository's signing key is checked against this fingerprint (RSA 4096, 2016). LiteSpeed's setup script downloads keys over plain HTTP
 # with no check; this does not. The older DSA 1024 key the repository also lists is not trusted.
