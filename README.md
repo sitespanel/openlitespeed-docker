@@ -1,5 +1,7 @@
 # OpenLiteSpeed with LSPHP 8.4
 
+[![image](https://github.com/sitespanel/openlitespeed-docker/actions/workflows/image.yml/badge.svg)](https://github.com/sitespanel/openlitespeed-docker/actions/workflows/image.yml) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/sitespanel/openlitespeed-docker/badge)](https://scorecard.dev/viewer/?uri=github.com/sitespanel/openlitespeed-docker)
+
 > **SitesPanel image source.** Google Cloud Build builds this image and publishes it to the GitHub Container Registry as `ghcr.io/sitespanel/openlitespeed`; see [CLOUDBUILD.md](CLOUDBUILD.md).
 
 The OpenLiteSpeed origin image for SitesPanel sites (the panel's ADR-0044, TASK-0198): Ubuntu 26.04, OpenLiteSpeed and LSPHP 8.4 from LiteSpeed's signed repository (key fingerprint in the `Dockerfile`), with APCu, Imagick, Redis and igbinary. Its history before 2026-11-04 is the panel repository's `images/openlitespeed` folder, kept here with `git subtree split`.
