@@ -1,0 +1,11 @@
+{
+  "files": {
+    "site/httpd_config.conf": "8201f4b12105ce54f451db10bdbf2c44fe77b53db7ab2a5718cc08d7744765a7",
+    "site/vhconf.conf": "c6463c303480b26faef404d33066f949e80de0db438b30f7585052f11ff8f471",
+    "nss/group": "39ce3edac01d7af4f4e35ce1d13198f3ff0d7307d76d6495f63b84afce611f48",
+    "nss/passwd": "bccd36da7572cbb430979979d3b263e5385ce7a1137d1e1bdd835ded974a5224",
+    "nss/sitespanel.ini": "168baa5669ed5d5148b9d25df7af26bd0b2fc4c61020e0b9e23b9052a1c53174"
+  },
+  "version": "2c28070",
+  "source": "the panel's contracts/openlitespeed-idle (its idle render) at commit 2c28070"
+}

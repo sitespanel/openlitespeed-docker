@@ -1,0 +1,148 @@
+# Builds the SitesPanel openlitespeed image (SitesPanel panel ADR-0065, amended 2026-11-04).
+# Every image is scanned with Trivy before anything is pushed. A push to main and the weekly rebuild publish to
+# ghcr.io/sitespanel/openlitespeed with this workflow's own token, then attach a signed build-provenance attestation and an SBOM
+# attestation to each digest. Pull requests build and scan only; they get no write permission.
+
+name: image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Dockerfile'
+      - 'ols-run'
+      - 'site/**'
+      - 'nss/**'
+      - 'pin.json'
+      - '.github/workflows/image.yml'
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 3 * * 1'   # Mondays 03:00 UTC: base-image security fixes arrive without a commit here
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: image-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Lint the Dockerfile (an error fails; warnings are shown)
+        run: docker run --rm -i hadolint/hadolint:v2.15.1@sha256:32dac94127fd60b7b7e3fbfc65e1383b9b5e25c9bfd7b8536de7a539fe68a12d hadolint --failure-threshold error - < Dockerfile
+
+  build:
+    needs: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    strategy:
+      fail-fast: false
+      matrix: {"include": [{"id": "8.4", "build_args": "", "target": "", "tags": "8.4 8.4-{sha}"}]}
+    env:
+      IMAGE: ghcr.io/sitespanel/openlitespeed
+      PUBLISH: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Version and tags
+        id: tags
+        run: |
+          echo "version=" >> "$GITHUB_OUTPUT"
+          sha="${GITHUB_SHA::7}"
+          v="$(grep -oP '^version=\K.*' "$GITHUB_OUTPUT" | tail -n 1 || true)"
+          tags=""
+          for t in ${{ matrix.tags }}; do
+            t="${t//\{version\}/$v}"; t="${t//\{sha\}/$sha}"
+            tags="$tags$IMAGE:$t"$'\n'
+          done
+          { echo "list<<EOF"; printf '%s' "$tags"; echo "EOF"; } >> "$GITHUB_OUTPUT"
+          echo "first=$(printf '%s' "$tags" | head -n 1)" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069  # v4.4.1
+
+      - name: Build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc  # v7.4.0
+        with:
+          context: .
+          target: ${{ matrix.target }}
+          build-args: ${{ matrix.build_args }}
+          tags: ${{ steps.tags.outputs.list }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/sitespanel/openlitespeed-docker
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.description=SitesPanel OpenLiteSpeed image with LSPHP 8.4, for sites that run on OpenLiteSpeed.
+          load: true
+          push: false
+          cache-from: type=gha,scope=${{ matrix.id }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.id }}
+
+      - name: Scan (a fixable critical vulnerability stops here, before any push)
+        run: |
+          docker save --output image.tar "${{ steps.tags.outputs.first }}"
+          docker run --rm -v "$PWD:/work" -v trivy-cache:/root/.cache aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c \
+            image --input /work/image.tar --severity CRITICAL --ignore-unfixed --exit-code 1 --format table
+          docker run --rm -v "$PWD:/work" -v trivy-cache:/root/.cache aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c \
+            image --input /work/image.tar --format spdx-json --output /work/sbom.spdx.json
+          rm -f image.tar
+
+      - name: Sign in to ghcr.io
+        if: env.PUBLISH == 'true'
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6  # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push the scanned image
+        id: push
+        if: env.PUBLISH == 'true'
+        run: |
+          while IFS= read -r tag; do
+            [ -n "$tag" ] && docker push "$tag"
+          done <<< "${{ steps.tags.outputs.list }}"
+          ref="$(docker inspect --format '{{index .RepoDigests 0}}' "${{ steps.tags.outputs.first }}")"
+          echo "digest=${ref#*@}" >> "$GITHUB_OUTPUT"
+
+      - name: Attest build provenance
+        if: env.PUBLISH == 'true'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8  # v4.2.2
+        with:
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+      - name: Attest the SBOM
+        if: env.PUBLISH == 'true'
+        uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e  # v4.1.0
+        with:
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          sbom-path: sbom.spdx.json
+          push-to-registry: true
+
+  # One stable check name for the branch ruleset: it passes only when lint and every matrix build passed.
+  checks:
+    if: always()
+    needs: [lint, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every job passed
+        run: |
+          [ "${{ needs.lint.result }}" = success ] || { echo "::error::lint: ${{ needs.lint.result }}"; exit 1; }
+          [ "${{ needs.build.result }}" = success ] || { echo "::error::build: ${{ needs.build.result }}"; exit 1; }

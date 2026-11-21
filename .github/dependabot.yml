@@ -1,0 +1,23 @@
+# Keeps the pinned GitHub Actions and the Dockerfile's base images current: a pull request a week per
+# ecosystem, grouped, labelled. The image workflow builds and scans each one before it can be merged.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "ci"
+    labels: ["dependencies", "github-actions"]
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: "image"
+    labels: ["dependencies", "docker"]
