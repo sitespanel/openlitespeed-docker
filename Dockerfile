@@ -2,7 +2,7 @@
 # (openlitespeed-docker, published to ghcr.io/sitespanel/openlitespeed); it is kept here so the contract in image-manifest/images.yaml and the
 # conditions of the security test (planning/reports/2026-10-31T0200-openlitespeed-lscgid-security-test.md) are checked against the same text.
 #
-#   docker build --build-arg PHP_MM=84 --build-arg PHP_VERSION=8.4.27-1+resolute -t ghcr.io/sitespanel/openlitespeed:8.4 images/openlitespeed
+#   docker build --build-arg PHP_MM=84 --build-arg PHP_VERSION=8.4.28-1+resolute -t ghcr.io/sitespanel/openlitespeed:8.4 images/openlitespeed
 #
 # Licences: OpenLiteSpeed is GPL-3.0+ (its package says so), LSPHP is the PHP License, the extensions have their own (see /usr/share/licenses/openlitespeed-image).
 # The packages come from LiteSpeed's apt repository, unmodified; the corresponding source of OpenLiteSpeed is
@@ -15,7 +15,7 @@ FROM ubuntu:26.04@sha256:6a06111c3b0a8600feadb270aec771dc239bf407b25625f93f44ab0
 ARG LITESPEED_KEY_FPR=3E892522DB44E1B063D366C5011AA62DEDA1F085
 ARG OLS_VERSION=1.9.4-3+resolute
 ARG PHP_MM=84
-ARG PHP_VERSION=8.4.27-1+resolute
+ARG PHP_VERSION=8.4.28-1+resolute
 ARG APCU_VERSION=5.1.28-1+resolute
 ARG IMAGICK_VERSION=3.8.1-1+resolute
 ARG REDIS_VERSION=6.3.0-1+resolute
