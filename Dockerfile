@@ -7,7 +7,7 @@
 # Licences: OpenLiteSpeed is GPL-3.0+ (its package says so), LSPHP is the PHP License, the extensions have their own (see /usr/share/licenses/openlitespeed-image).
 # The packages come from LiteSpeed's apt repository, unmodified; the corresponding source of OpenLiteSpeed is
 # https://github.com/litespeedtech/openlitespeed at the tag of the version below, and is available on request (see the image labels).
-# Base image: ubuntu:26.04 as published on 2026-11-08 (the earlier one carried a /usr/bin/pebble built with a Go standard library that has high CVEs).
+# Base image: ubuntu:26.04 as published on 2026-11-08. Its /usr/bin/pebble is removed below.
 FROM ubuntu:26.04@sha256:6a06111c3b0a8600feadb270aec771dc239bf407b25625f93f44ab00e11f4d3c
 
 # The repository's signing key is checked against this fingerprint (RSA 4096, 2016). LiteSpeed's setup script downloads keys over plain HTTP
@@ -68,7 +68,10 @@ RUN set -eu; \
     chgrp -R ols /usr/local/lsws/logs /usr/local/lsws/admin/cgid /usr/local/lsws/admin/logs /usr/local/lsws/admin/tmp /usr/local/lsws/conf; \
     chown -R ols:ols /usr/local/lsws/tmp /usr/local/lsws/cgid /usr/local/lsws/cachedata; \
     apt-get purge -y -qq curl gnupg >/dev/null; apt-get autoremove -y -qq >/dev/null; \
-    rm -rf /var/lib/apt/lists/* /tmp/lst_repo.gpg /etc/apt/sources.list.d/litespeed.list /usr/share/keyrings/litespeed.gpg
+    rm -rf /var/lib/apt/lists/* /tmp/lst_repo.gpg /etc/apt/sources.list.d/litespeed.list /usr/share/keyrings/litespeed.gpg; \
+    # Ubuntu's base image ships Canonical's service manager, pebble, outside any package; nothing here runs it, and its Go standard library is
+    # a recurring source of high CVEs (CVE-2026-97054 in Go 1.27.3, found by the image manifest's scan, 2026-11-21).
+    rm -f /usr/bin/pebble
 
 # The idle configuration and account files: exactly what the panel's agent renders for a container with no site yet (internal/agent/ols, kept equal by
 # a test). The agent mounts the site's own versions of these two folders over them. The server's main configuration and the container's accounts are
