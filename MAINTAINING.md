@@ -33,7 +33,7 @@ gh api -X POST repos/sitespanel/openlitespeed-docker/rulesets --input ruleset-ma
 ## Routine
 
 - **Every Monday:** Dependabot's pull requests for actions and base images; merge them once `checks` passes. The weekly rebuild runs at 03:00 UTC.
-- **A failed scan** (a fixable critical vulnerability): update the base image or the package in the `Dockerfile`, open a pull request, merge when green. Nothing was pushed by the failed run.
+- **A failed scan** (a fixable high or critical vulnerability): update the base image or the package in the `Dockerfile`, open a pull request, merge when green. Nothing was pushed by the failed run.
 - **A new upstream version** (PHP, nginx, httpd, Caddy, Adminer, OpenLiteSpeed): bump the `ARG` or `FROM` line in a pull request; the tags follow the `Dockerfile`.
 - **Releases:** the image is the release; there are no Git release tags. SitesPanel's servers use only digests listed in the signed SitesPanel image manifest.
 - **OpenSSF Scorecard:** the weekly result is public; fix any check that drops.
