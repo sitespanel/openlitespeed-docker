@@ -1,4 +1,4 @@
-# Builds the SitesPanel openlitespeed image (SitesPanel panel ADR-0065, amended 2026-11-04).
+# Builds the SitesPanel openlitespeed image.
 # Every image is scanned with Trivy before anything is pushed. A push to main and the weekly rebuild publish to
 # ghcr.io/sitespanel/openlitespeed with this workflow's own token, then attach a signed build-provenance attestation and an SBOM
 # attestation to each digest. Pull requests build and scan only; they get no write permission.
@@ -88,8 +88,9 @@ jobs:
             org.opencontainers.image.description=SitesPanel OpenLiteSpeed image with LSPHP 8.4, for sites that run on OpenLiteSpeed.
           load: true
           push: false
-          # The weekly rebuild exists to pick up base-image and package fixes: it skips the cache and pulls the base again.
-          no-cache: ${{ github.event_name == 'schedule' }}
+          # A build that can publish (push to main, the weekly rebuild, a manual run) skips the cache and pulls the base again,
+          # so the package upgrade layer takes the security fixes released since the last build. Pull requests keep the cache.
+          no-cache: ${{ github.event_name != 'pull_request' }}
           pull: true
           cache-from: type=gha,scope=${{ matrix.id }}
           cache-to: type=gha,mode=max,scope=${{ matrix.id }}
