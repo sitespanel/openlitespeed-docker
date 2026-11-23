@@ -88,14 +88,17 @@ jobs:
             org.opencontainers.image.description=SitesPanel OpenLiteSpeed image with LSPHP 8.4, for sites that run on OpenLiteSpeed.
           load: true
           push: false
+          # The weekly rebuild exists to pick up base-image and package fixes: it skips the cache and pulls the base again.
+          no-cache: ${{ github.event_name == 'schedule' }}
+          pull: true
           cache-from: type=gha,scope=${{ matrix.id }}
           cache-to: type=gha,mode=max,scope=${{ matrix.id }}
 
-      - name: Scan (a fixable critical vulnerability stops here, before any push)
+      - name: Scan (a fixable high or critical vulnerability stops here, before any push)
         run: |
           docker save --output image.tar "${{ steps.tags.outputs.first }}"
           docker run --rm -v "$PWD:/work" -v trivy-cache:/root/.cache aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c \
-            image --input /work/image.tar --severity CRITICAL --ignore-unfixed --exit-code 1 --format table
+            image --input /work/image.tar --severity CRITICAL,HIGH --ignore-unfixed --ignorefile /work/.trivyignore --exit-code 1 --format table
           docker run --rm -v "$PWD:/work" -v trivy-cache:/root/.cache aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c \
             image --input /work/image.tar --format spdx-json --output /work/sbom.spdx.json
           rm -f image.tar
