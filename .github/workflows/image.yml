@@ -88,9 +88,9 @@ jobs:
             org.opencontainers.image.description=SitesPanel OpenLiteSpeed image with LSPHP 8.4, for sites that run on OpenLiteSpeed.
           load: true
           push: false
-          # A build that can publish (push to main, the weekly rebuild, a manual run) skips the cache and pulls the base again,
-          # so the package upgrade layer takes the security fixes released since the last build. Pull requests keep the cache.
-          no-cache: ${{ github.event_name != 'pull_request' }}
+          # Every build skips the cache and pulls the base again, so the package upgrade layer always takes the security fixes
+          # released since the last build, and the scan sees what would really ship (a cached layer hid them, 2026-11-23).
+          no-cache: true
           pull: true
           cache-from: type=gha,scope=${{ matrix.id }}
           cache-to: type=gha,mode=max,scope=${{ matrix.id }}
