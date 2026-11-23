@@ -15,3 +15,7 @@ The OpenLiteSpeed origin image for SitesPanel sites: Ubuntu 26.04, OpenLiteSpeed
 | `site/`, `nss/` | the configuration an idle container starts with. They are **copies of the panel's idle render** (the panel owns them in `contracts/openlitespeed-idle/`); `pin.json` lists each file's SHA-256 and the panel commit they came from. After the panel changes its renderer, copy the new files here and update `pin.json`. |
 
 No file of another project is read at build time.
+
+## Licence
+
+MIT for this repository's build files ([LICENSE](LICENSE)). The image packages OpenLiteSpeed (GPL-3.0) and LSPHP (the PHP License 3.01) from LiteSpeed's repository, and Ubuntu packages, each under its own licence (`/usr/share/doc/*/copyright` in the image).
