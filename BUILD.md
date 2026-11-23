@@ -1,6 +1,6 @@
 # How this image is built
 
-This repository is the source of SitesPanel's `openlitespeed` image. **GitHub Actions** builds it and publishes it to the **GitHub Container Registry** as `ghcr.io/sitespanel/openlitespeed` (the SitesPanel panel's ADR-0065, amended 2026-11-04). The workflow is `.github/workflows/image.yml`.
+This repository is the source of SitesPanel's `openlitespeed` image. **GitHub Actions** builds it and publishes it to the **GitHub Container Registry** as `ghcr.io/sitespanel/openlitespeed`. The workflow is `.github/workflows/image.yml`.
 
 ## What runs
 
@@ -19,7 +19,7 @@ gh attestation verify oci://ghcr.io/sitespanel/openlitespeed@sha256:DIGEST --own
 
 GitHub-hosted runners are free for public repositories, a standard Linux runner has 4 CPUs and 16 GB of memory, the workflow's token pushes to ghcr.io without a stored secret and links the package to this repository, and the attestations give signed provenance (SLSA v1.0 Build Level 2). The GitHub Container Registry's storage and bandwidth are currently free (GitHub promises at least a month's notice before any change). All read on docs.github.com on 2026-11-04.
 
-## One-time steps (by the founder)
+## One-time steps (by a maintainer)
 
 1. After the first successful push, open the package `openlitespeed` in the `sitespanel` organisation's packages and set its visibility to **public** (a new package starts private); confirm it shows this repository as linked.
 2. In this repository's settings, Actions: allow GitHub Actions, and keep "Read repository contents" as the default workflow permission (the workflow asks for package and attestation write itself).

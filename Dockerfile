@@ -1,6 +1,5 @@
-# OpenLiteSpeed with LSPHP for one PHP version (TASK-0198, step 2; ADR-0044). This is the Dockerfile for the founder's image repository
-# (openlitespeed-docker, published to ghcr.io/sitespanel/openlitespeed); it is kept here so the contract in image-manifest/images.yaml and the
-# conditions of the security test (planning/reports/2026-10-31T0200-openlitespeed-lscgid-security-test.md) are checked against the same text.
+# OpenLiteSpeed with LSPHP for one PHP version, published to ghcr.io/sitespanel/openlitespeed. SitesPanel checks its image contract
+# and the conditions of its security test against this file.
 #
 #   docker build --build-arg PHP_MM=84 --build-arg PHP_VERSION=8.4.28-1+resolute -t ghcr.io/sitespanel/openlitespeed:8.4 images/openlitespeed
 #
@@ -44,7 +43,7 @@ RUN set -eu; \
     # openlitespeed brings LSPHP 8.3 by default; only the version this image is for stays.
     for v in 83 84 85; do [ "$v" = "$PHP_MM" ] || rm -rf "/usr/local/lsws/lsphp$v"; done; \
     # No admin console (condition 3), no demo virtual host, no documentation, no add-ons, no installer helpers (no acme.sh, no WP-CLI here). The server
-    # refuses to start without an "admin virtual host" and a listener for it (found in step 2), so a skeleton stays: no pages, no scripts, no password
+    # refuses to start without an "admin virtual host" and a listener for it, so a skeleton stays: no pages, no scripts, no password
     # file, no keys, and a listener on the container's loopback only that answers 404 or 403 to everything.
     rm -rf /usr/local/lsws/Example /usr/local/lsws/docs /usr/local/lsws/add-ons /usr/local/lsws/phpbuild /usr/local/lsws/lsrecaptcha \
            /usr/local/lsws/conf/vhosts /usr/local/lsws/conf/templates; \
@@ -92,6 +91,6 @@ LABEL org.opencontainers.image.title="OpenLiteSpeed with LSPHP" \
       org.opencontainers.image.description="Unmodified OpenLiteSpeed and LSPHP packages from LiteSpeed's apt repository. The corresponding source of OpenLiteSpeed is at the source URL at the tag of the installed version, and the Dockerfile that built this image is public; the corresponding source is also available on request from the image's publisher." \
       io.sitespanel.web-server="openlitespeed"
 
-# The panel's agent starts the container with a small init (for SIGUSR1/SIGTERM), a read-only root, only the capabilities in ADR-0044 and the folders the
-# server writes as volumes (TASK-0198, step 3). Until the agent writes its configuration (step 4) the server serves nothing.
+# The panel's agent starts the container with a small init (for SIGUSR1/SIGTERM), a read-only root, only the capabilities it needs and the folders the
+# server writes as volumes. Until the agent writes its configuration the server serves nothing.
 CMD ["/usr/local/bin/ols-run"]

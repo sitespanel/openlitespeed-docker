@@ -1,5 +1,5 @@
 #!/bin/sh
-# The container's command (TASK-0198). OpenLiteSpeed has no foreground mode: `lswsctrl start` forks the server and returns. This runs under the
+# The container's command. OpenLiteSpeed has no foreground mode: `lswsctrl start` forks the server and returns. This runs under the
 # container's init, starts the server, and stays as long as it does.
 #
 # - SIGUSR1 (graceful restart: the server re-reads its configuration and replaces its workers without dropping connections) and SIGTERM (stop) reach
